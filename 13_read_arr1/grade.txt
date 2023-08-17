@@ -1,0 +1,9 @@
+Grading at Wed 16 Aug 2023 11:14:09 AM UTC
+Attempting to compile test.c
+gcc -std=gnu99 -pedantic -Wall -c test.c
+gcc -o test test.o
+compiled
+Your file matched the expected output
+Your output matched what we expected
+
+Overall Grade: A
