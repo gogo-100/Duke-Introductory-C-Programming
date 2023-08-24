@@ -4,10 +4,20 @@
 #include <assert.h>
 
 int card_ptr_comp(const void * vp1, const void * vp2) {
-    if(*vp1.value > *vp2.value) return -1;
-    else if (*vp1.value < *vp2.value) return 1;
-    else if return *vp1.suit > *vp2.suit;
+    card_t *a = vp1;
+    card_t *b = vp2;
+    if(a -> value > b -> value) return -1;
+    else if (a -> value < b -> value) return 1;
+    else  return a -> suit > b -> suit;
 }
+
+typedef enum {
+  SPADES,
+  HEARTS,
+  DIAMONDS,
+  CLUBS,
+  NUM_SUITS
+} suit_t;
 
 suit_t flush_suit(deck_t * hand) {
   card_t** cards = hand -> cards;
@@ -66,7 +76,7 @@ int find_next_different_value(deck_t * hand, size_t index, suit_t fs, signed val
 
 int is_n_length_straight_at(deck_t * hand, size_t index, suit_t fs, int n){
     if(n == 0) return 1;  //递归出口
-    signed nowValue = cards[index][0].value;
+    signed nowValue = hand -> cards[index][0].value;
     size_t nextIndex = find_next_different_value(hand, index, fs, nowValue-1);
     if(nextIndex > 0) return is_n_length_straight_at(hand, nextIndex, fs, n-1);
     else return 0;
@@ -112,8 +122,8 @@ int add_single_cards(deck_t * hand, card_t * card, int left, int right, int coun
 int  add_pair_cards(deck_t * hand, card_t * card, int left, int right, int index){
   if(left > right) return 0;
   int i = 0;
-  for(; left + i <= right && i < count ; i ++){
-      if(left + i + 1 < hand -> n_cards && cards[left + i] == cards[left + i + 1] ){
+  for(; left + i <= right ; i ++){
+      if(left + i + 1 < hand -> n_cards && card[left + i].value == card[left + i + 1].value ){
            card[index] = hand ->  cards[left + i][0];
            card[index + 1] = hand -> cards[left + i + 1][0];
            return 2;
@@ -132,20 +142,20 @@ hand_eval_t build_hand_from_match(deck_t * hand,
     ans.cards[i] = hand -> cards[idx + 0];
   }
   if(what == hand_ranking_t.TWO_PAIR || what == hand_ranking_t.FULL_HOUSE){//找对子
-      if(idx > 0){//找前面
-          int count = 0;
-          for(int i = 0; i < idx ; i++){
-              if(hand -> cards[i][0] == hand -> cards[i+1][0]){
-
-              }
+      int count = what == hand_ranking_t.TWO_PAIR? 2:3;
+      //找对子
+      int add = add_pair_cards(hand, ans.cards, 0, idx - 1, count);
+      if(add == 0) add_pair_cards(hand, ans.cards, idx + n, hand -> n_cards - 1, count);
+      //找单牌
+      if(n + 2 < 5){
+          int count = add_single_cards(hand, ans.cards, 0, idx - 1, 1 );
+          if(count == 0){
+              int i;
+              for(i = idx + 2; i < hand -> n_cards && hand->cards[i][0].value!= ans.cards[3]->value; i++ );
+              count = add_single_cards(hand, ans.cards, idx + 2, i - 1, 1 );
+              add_single_cards(hand, ans.cards, i + 2, hand -> n_cards - 1, 1 - count );
           }
-          if(i + n == 5) return ans;
       }
-      //找后面
-      for(int j = 0; n + i + j < 5; j++){
-          ans.cards[n + i + j] = hand -> cards[n + idx + j];
-      }
-
   }
   else{//找出单张最大的5-n张 deck_t * hand, card_t * card, int left, int right, int count
       //找前面
@@ -158,10 +168,10 @@ hand_eval_t build_hand_from_match(deck_t * hand,
 
 
 int compare_hands(deck_t * hand1, deck_t * hand2) {
-  qsort(hand1->cards,hand1->n_cards,sizeof(card*), card_ptr_comp);
-  qsort(hand2->cards,hand2->n_cards,sizeof(card*), card_ptr_comp);
-  hand_eval_t eval1 = elauate_hand(hand1);
-  hand_eval_t eval2 = elauate_hand(hand2);
+  qsort(hand1->cards,hand1->n_cards,sizeof(card_t*), card_ptr_comp);
+  qsort(hand2->cards,hand2->n_cards,sizeof(card_t*), card_ptr_comp);
+  hand_eval_t eval1 = evaluate_hand(hand1);
+  hand_eval_t eval2 = evaluate_hand(hand2);
   if(eval1.ranking!=eval2.ranking){
     return eval2.ranking - eval1.ranking;
   }
