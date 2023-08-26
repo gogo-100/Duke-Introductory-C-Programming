@@ -3,34 +3,44 @@
 #include <stdlib.h>
 #include <assert.h>
 
+
+/*
+    比较两张牌的大小
+    先比较值，若值相等则比较花色
+    因为比较的值是牌的指针的指针所以要先做一次转换
+*/
 int card_ptr_comp(const void * vp1, const void * vp2) {
-    card_t *a = vp1;
-    card_t *b = vp2;
+    const card_t * a = (*(card_t **)vp1);
+    const card_t * b = (*(card_t **)vp2);
     if(a -> value > b -> value) return -1;
-    else if (a -> value < b -> value) return 1;
-    else  return a -> suit > b -> suit;
+    else if (a-> value < b-> value) return 1;
+    else  return a-> suit > b-> suit;
 }
 
-typedef enum {
-  SPADES,
-  HEARTS,
-  DIAMONDS,
-  CLUBS,
-  NUM_SUITS
-} suit_t;
-
+/*
+    判断有没有同花
+*/
 suit_t flush_suit(deck_t * hand) {
+  printf("check flush......\n");
   card_t** cards = hand -> cards;
   int count [4] = {0,0,0,0};
   for(int i = 0; i < hand -> n_cards ; i++){
-     count[cards[i][0].suit]++;
+     count[cards[i]->suit]++;
   }
   for(int i = 0; i < 4; i++){
-    if(count[i]>=5) return (enum suit_t) i;
+    if(count[i]>=5){
+        printf("FLUSH\n");
+        suit_t suit = i;
+        return suit;
+    }
   }
+  printf("NO FLUSH\n");
   return NUM_SUITS;
 }
 
+/*
+   返回最大值
+*/
 unsigned get_largest_element(unsigned * arr, size_t n) {
   unsigned maxVal = arr[0];
   for(int i = 0; i < n ; i++){
@@ -39,6 +49,15 @@ unsigned get_largest_element(unsigned * arr, size_t n) {
   return maxVal;
 }
 
+/*
+    在n张牌中找到第一个有n_of_akind连的点数
+
+    match_counts的意思是 统计出现的次数
+    如果牌是4d 8c 9h 4h 4c
+    那么match_counts 就是 3 1 1 3 3
+    统计的是出现的次数
+
+*/
 size_t get_match_index(unsigned * match_counts, size_t n,unsigned n_of_akind){
   for(size_t i = 0; i < n; i++){
     if(match_counts[i] == n_of_akind) return i;
@@ -47,24 +66,34 @@ size_t get_match_index(unsigned * match_counts, size_t n,unsigned n_of_akind){
   return -1;
 }
 
-// 如果牌是4d 8c 9h 4h 4c
-// 那么match_counts 就是 3 1 1 3 3
-// 统计的是出现的次数
+/*
+    找到第二个对子（2连）
+*/
+
 ssize_t  find_secondary_pair(deck_t * hand,
 			     unsigned * match_counts,
 			     size_t match_idx) {
-  if( match_idx + match_counts[match_idx] > 1 ) return match_idx + match_counts[match_idx];
-  else return -1;
+  size_t nextIndex = match_idx + match_counts[match_idx];
+  for(size_t i = nextIndex; i < hand -> n_cards; i++ ){
+      if(match_counts[i] > 1 && hand -> cards[i][0].value != hand -> cards[match_idx][0].value) return i;
+  }
+  return -1;
 }
 
-//检测花色是否合适
+
+/*
+    检测花色是否符合要求
+*/
 int check_suit(suit_t fs, suit_t now){
     if(fs == NUM_SUITS) return 1;
     else return fs == now;
 }
 
-//找花色为x值为y的卡牌
-//如果找到则返回index，没找到则返回-1
+/*
+    找花色为fs,值为value的卡牌
+    如果找到则返回index，没找到则返回-1
+*/
+
 int find_next_different_value(deck_t * hand, size_t index, suit_t fs, signed value){
     card_t** cards = hand -> cards;
     for(;index < hand -> n_cards; index++){
@@ -73,18 +102,24 @@ int find_next_different_value(deck_t * hand, size_t index, suit_t fs, signed val
     return -1;
 }
 
-
+/*
+    判断从起点index开始是否是一个花色为fs,长度为n的顺子
+*/
 int is_n_length_straight_at(deck_t * hand, size_t index, suit_t fs, int n){
+    printf("check N Length STRAIGHT,which starts at %zu, flush is %d, length is %d/// is_n_length_straight_at \n",index,fs,n);
     if(n == 0) return 1;  //递归出口
     signed nowValue = hand -> cards[index][0].value;
-    size_t nextIndex = find_next_different_value(hand, index, fs, nowValue-1);
+    int nextIndex = find_next_different_value(hand, index, fs, nowValue-1);
     if(nextIndex > 0) return is_n_length_straight_at(hand, nextIndex, fs, n-1);
     else return 0;
 }
 
+/*
+    判断是不是ace_low顺子，如果是返回-1，不是返回0
+*/
 int is_ace_low_straight_at(deck_t * hand, size_t index, suit_t fs){
-    card_t** cards = hand -> cards;
-    size_t nextIndex = find_next_different_value(hand,0,fs,5);
+    printf("check ACE-LOW STRAIGHT which index= %zu，suit=%d ///// is_ace_low_straight_at  \n",index,fs);
+    int nextIndex = find_next_different_value(hand,0,fs,5);
     if(nextIndex < 0) return 0;
     else{
         if(is_n_length_straight_at(hand, nextIndex, fs, 3))return -1;
@@ -93,45 +128,66 @@ int is_ace_low_straight_at(deck_t * hand, size_t index, suit_t fs){
 
 }
 
-//index的suit和给的suit会不会不一样
+/*
+    判断从Index开头是不是花色为fs的顺子
+*/
 int is_straight_at(deck_t * hand, size_t index, suit_t fs) {
-  card_t** cards = hand -> cards;
-  if(cards[index][0].value == 1){//要考虑ace-low的情况
-     return is_ace_low_straight_at(hand , 0, fs);
-  }
-  else if (cards[index][0].value < 5) { //4.3.2开头的话没有顺子
-     return 0;
-  }
-  else{
-     return is_n_length_straight_at(hand, index, fs, 4);
-  }
+    print_hand(hand);
+    printf("check STRAIGHT which starts at %zu, flush is %d//// is_straight_at\n",index,fs);
+    qsort(hand->cards,hand->n_cards,sizeof(card_t*), card_ptr_comp);
+    print_hand(hand);
+    printf("\n");
+    card_t** cards = hand -> cards;
+    if(cards[index][0].value == 14){//要考虑ace-low的情况但也要考虑AKQJ0的情况
+        printf("ace-low situation\n");
+        if (is_ace_low_straight_at(hand, 0, fs) == -1) return -1;
+    }
+    if (cards[index][0].value < 5) { //4.3.2开头的话没有顺子
+        printf("no straight\n");
+        return 0;
+    }
+    else{
+        printf("recursion\n");
+        return is_n_length_straight_at(hand, index, fs, 4);
+    }
 }
 
-
-//从[left,right]添加count张单牌
-int add_single_cards(deck_t * hand, card_t * card, int left, int right, int count){
+/*
+    从[left,right]搜索count张单牌，往手牌里添加
+    返回成功添加的总张数i
+*/
+int add_single_cards(deck_t * hand, card_t ** card, int left, int right, int count){
   if(left > right) return 0;
   int i = 0;
   for(; left + i <= right && i < count ; i ++){
-      card[5 - count + i] = hand -> cards[left + i][0];
+      card[5 - count + i] = hand -> cards[left + i];
   }
   return i;
 }
 
-//从[left,right]添加对子
-int  add_pair_cards(deck_t * hand, card_t * card, int left, int right, int index){
+
+/*
+    从[left,right]搜索对子，往手牌里添加（存储位置从index开始）
+    返回成功添加的总张数
+*/
+
+int  add_pair_cards(deck_t * hand, card_t ** card, int left, int right, int index){
   if(left > right) return 0;
   int i = 0;
   for(; left + i <= right ; i ++){
-      if(left + i + 1 < hand -> n_cards && card[left + i].value == card[left + i + 1].value ){
-           card[index] = hand ->  cards[left + i][0];
-           card[index + 1] = hand -> cards[left + i + 1][0];
+      if(left + i + 1 < hand -> n_cards && card[left + i]->value == card[left + i + 1]->value ){
+           card[index] = hand ->  cards[left + i];
+           card[index + 1] = hand -> cards[left + i + 1];
            return 2;
       }
   }
   return 0;
 }
 
+/*
+    构建手牌
+    在主体的前面和后面寻找tiebreak
+*/
 hand_eval_t build_hand_from_match(deck_t * hand,
 				  unsigned n,
 				  hand_ranking_t what,
@@ -141,8 +197,8 @@ hand_eval_t build_hand_from_match(deck_t * hand,
   for(int i = 0; i < n ;i++ ){
     ans.cards[i] = hand -> cards[idx + 0];
   }
-  if(what == hand_ranking_t.TWO_PAIR || what == hand_ranking_t.FULL_HOUSE){//找对子
-      int count = what == hand_ranking_t.TWO_PAIR? 2:3;
+  if(what == TWO_PAIR || what == FULL_HOUSE){//找对子
+      int count = what == TWO_PAIR? 2:3;
       //找对子
       int add = add_pair_cards(hand, ans.cards, 0, idx - 1, count);
       if(add == 0) add_pair_cards(hand, ans.cards, idx + n, hand -> n_cards - 1, count);
@@ -166,10 +222,10 @@ hand_eval_t build_hand_from_match(deck_t * hand,
   return ans;
 }
 
-
+/*
+    比较手牌
+*/
 int compare_hands(deck_t * hand1, deck_t * hand2) {
-  qsort(hand1->cards,hand1->n_cards,sizeof(card_t*), card_ptr_comp);
-  qsort(hand2->cards,hand2->n_cards,sizeof(card_t*), card_ptr_comp);
   hand_eval_t eval1 = evaluate_hand(hand1);
   hand_eval_t eval2 = evaluate_hand(hand2);
   if(eval1.ranking!=eval2.ranking){
@@ -184,7 +240,7 @@ int compare_hands(deck_t * hand1, deck_t * hand2) {
   return 0;
 }
 
-
+//=======================================================
 
 //You will write this function in Course 4.
 //For now, we leave a prototype (and provide our
@@ -259,6 +315,8 @@ int find_straight(deck_t * hand, suit_t fs, hand_eval_t * ans) {
 //This function puts all the hand evaluation logic together.
 //This function is longer than we generally like to make functions,
 //and is thus not so great for readability :(
+
+
 hand_eval_t evaluate_hand(deck_t * hand) {
   suit_t fs = flush_suit(hand);
   hand_eval_t ans;
@@ -326,3 +384,4 @@ hand_eval_t evaluate_hand(deck_t * hand) {
   }
   return build_hand_from_match(hand, 0, NOTHING, 0);
 }
+
