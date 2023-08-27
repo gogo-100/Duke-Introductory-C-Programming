@@ -5,23 +5,24 @@
 
 
 /*
-    ±È½ÏÁ½ÕÅÅÆµÄ´óĞ¡
-    ÏÈ±È½ÏÖµ£¬ÈôÖµÏàµÈÔò±È½Ï»¨É«
-    ÒòÎª±È½ÏµÄÖµÊÇÅÆµÄÖ¸ÕëµÄÖ¸ÕëËùÒÔÒªÏÈ×öÒ»´Î×ª»»
+    æ¯”è¾ƒä¸¤å¼ ç‰Œçš„å¤§å°
+    å…ˆæ¯”è¾ƒå€¼ï¼Œè‹¥å€¼ç›¸ç­‰åˆ™æ¯”è¾ƒèŠ±è‰²
+    å› ä¸ºæ¯”è¾ƒçš„å€¼æ˜¯ç‰Œçš„æŒ‡é’ˆçš„æŒ‡é’ˆæ‰€ä»¥è¦å…ˆåšä¸€æ¬¡è½¬æ¢
 */
 int card_ptr_comp(const void * vp1, const void * vp2) {
     const card_t * a = (*(card_t **)vp1);
     const card_t * b = (*(card_t **)vp2);
     if(a -> value > b -> value) return -1;
     else if (a-> value < b-> value) return 1;
-    else  return a-> suit > b-> suit;
+    else  return a-> suit <  b-> suit;
 }
 
 /*
-    ÅĞ¶ÏÓĞÃ»ÓĞÍ¬»¨
+    åˆ¤æ–­æœ‰æ²¡æœ‰åŒèŠ±
 */
 suit_t flush_suit(deck_t * hand) {
-  printf("check flush......\n");
+  //printf("check flush......\n");
+  qsort(hand->cards,hand->n_cards,sizeof(card_t*), card_ptr_comp);
   card_t** cards = hand -> cards;
   int count [4] = {0,0,0,0};
   for(int i = 0; i < hand -> n_cards ; i++){
@@ -29,17 +30,17 @@ suit_t flush_suit(deck_t * hand) {
   }
   for(int i = 0; i < 4; i++){
     if(count[i]>=5){
-        printf("FLUSH\n");
+        //printf("FLUSH\n");
         suit_t suit = i;
         return suit;
     }
   }
-  printf("NO FLUSH\n");
+  //printf("NO FLUSH\n");
   return NUM_SUITS;
 }
 
 /*
-   ·µ»Ø×î´óÖµ
+   è¿”å›æœ€å¤§å€¼
 */
 unsigned get_largest_element(unsigned * arr, size_t n) {
   unsigned maxVal = arr[0];
@@ -50,24 +51,23 @@ unsigned get_largest_element(unsigned * arr, size_t n) {
 }
 
 /*
-    ÔÚnÕÅÅÆÖĞÕÒµ½µÚÒ»¸öÓĞn_of_akindÁ¬µÄµãÊı
+    åœ¨nå¼ ç‰Œä¸­æ‰¾åˆ°ç¬¬ä¸€ä¸ªæœ‰n_of_akindè¿çš„ç‚¹æ•°
 
-    match_countsµÄÒâË¼ÊÇ Í³¼Æ³öÏÖµÄ´ÎÊı
-    Èç¹ûÅÆÊÇ4d 8c 9h 4h 4c
-    ÄÇÃ´match_counts ¾ÍÊÇ 3 1 1 3 3
-    Í³¼ÆµÄÊÇ³öÏÖµÄ´ÎÊı
+    match_countsçš„æ„æ€æ˜¯ ç»Ÿè®¡å‡ºç°çš„æ¬¡æ•°
+    å¦‚æœç‰Œæ˜¯4d 8c 9h 4h 4c
+    é‚£ä¹ˆmatch_counts å°±æ˜¯ 3 1 1 3 3
+    ç»Ÿè®¡çš„æ˜¯å‡ºç°çš„æ¬¡æ•°
 
 */
 size_t get_match_index(unsigned * match_counts, size_t n,unsigned n_of_akind){
   for(size_t i = 0; i < n; i++){
     if(match_counts[i] == n_of_akind) return i;
   }
-  abort();
   return -1;
 }
 
 /*
-    ÕÒµ½µÚ¶ş¸ö¶Ô×Ó£¨2Á¬£©
+    æ‰¾åˆ°ç¬¬äºŒä¸ªå¯¹å­ï¼ˆ2è¿ï¼‰
 */
 
 ssize_t  find_secondary_pair(deck_t * hand,
@@ -77,12 +77,15 @@ ssize_t  find_secondary_pair(deck_t * hand,
   for(size_t i = nextIndex; i < hand -> n_cards; i++ ){
       if(match_counts[i] > 1 && hand -> cards[i][0].value != hand -> cards[match_idx][0].value) return i;
   }
+  for (size_t i = 0; i < match_idx; i++) {
+      if (match_counts[i] > 1 && hand->cards[i][0].value != hand->cards[match_idx][0].value) return i;
+  }
   return -1;
 }
 
 
 /*
-    ¼ì²â»¨É«ÊÇ·ñ·ûºÏÒªÇó
+    æ£€æµ‹èŠ±è‰²æ˜¯å¦ç¬¦åˆè¦æ±‚
 */
 int check_suit(suit_t fs, suit_t now){
     if(fs == NUM_SUITS) return 1;
@@ -90,8 +93,8 @@ int check_suit(suit_t fs, suit_t now){
 }
 
 /*
-    ÕÒ»¨É«Îªfs,ÖµÎªvalueµÄ¿¨ÅÆ
-    Èç¹ûÕÒµ½Ôò·µ»Øindex£¬Ã»ÕÒµ½Ôò·µ»Ø-1
+    æ‰¾èŠ±è‰²ä¸ºfs,å€¼ä¸ºvalueçš„å¡ç‰Œ
+    å¦‚æœæ‰¾åˆ°åˆ™è¿”å›indexï¼Œæ²¡æ‰¾åˆ°åˆ™è¿”å›-1
 */
 
 int find_next_different_value(deck_t * hand, size_t index, suit_t fs, signed value){
@@ -103,11 +106,11 @@ int find_next_different_value(deck_t * hand, size_t index, suit_t fs, signed val
 }
 
 /*
-    ÅĞ¶Ï´ÓÆğµãindex¿ªÊ¼ÊÇ·ñÊÇÒ»¸ö»¨É«Îªfs,³¤¶ÈÎªnµÄË³×Ó
+    åˆ¤æ–­ä»èµ·ç‚¹indexå¼€å§‹æ˜¯å¦æ˜¯ä¸€ä¸ªèŠ±è‰²ä¸ºfs,é•¿åº¦ä¸ºnçš„é¡ºå­
 */
 int is_n_length_straight_at(deck_t * hand, size_t index, suit_t fs, int n){
-    printf("check N Length STRAIGHT,which starts at %zu, flush is %d, length is %d/// is_n_length_straight_at \n",index,fs,n);
-    if(n == 0) return 1;  //µİ¹é³ö¿Ú
+    //printf("check N Length STRAIGHT,which starts at %zu, flush is %d, length is %d/// is_n_length_straight_at \n",index,fs,n);
+    if(n == 0) return 1;  //é€’å½’å‡ºå£
     signed nowValue = hand -> cards[index][0].value;
     int nextIndex = find_next_different_value(hand, index, fs, nowValue-1);
     if(nextIndex > 0) return is_n_length_straight_at(hand, nextIndex, fs, n-1);
@@ -115,11 +118,11 @@ int is_n_length_straight_at(deck_t * hand, size_t index, suit_t fs, int n){
 }
 
 /*
-    ÅĞ¶ÏÊÇ²»ÊÇace_lowË³×Ó£¬Èç¹ûÊÇ·µ»Ø-1£¬²»ÊÇ·µ»Ø0
+    åˆ¤æ–­æ˜¯ä¸æ˜¯ace_lowé¡ºå­ï¼Œå¦‚æœæ˜¯è¿”å›-1ï¼Œä¸æ˜¯è¿”å›0
 */
 int is_ace_low_straight_at(deck_t * hand, size_t index, suit_t fs){
-    printf("check ACE-LOW STRAIGHT which index= %zu£¬suit=%d ///// is_ace_low_straight_at  \n",index,fs);
-    int nextIndex = find_next_different_value(hand,0,fs,5);
+    //printf("check ACE-LOW STRAIGHT which index= %zuï¼Œsuit=%d ///// is_ace_low_straight_at  \n",index,fs);
+    int  nextIndex = find_next_different_value(hand,0,fs,5);
     if(nextIndex < 0) return 0;
     else{
         if(is_n_length_straight_at(hand, nextIndex, fs, 3))return -1;
@@ -129,32 +132,30 @@ int is_ace_low_straight_at(deck_t * hand, size_t index, suit_t fs){
 }
 
 /*
-    ÅĞ¶Ï´ÓIndex¿ªÍ·ÊÇ²»ÊÇ»¨É«ÎªfsµÄË³×Ó
+    åˆ¤æ–­ä»Indexå¼€å¤´æ˜¯ä¸æ˜¯èŠ±è‰²ä¸ºfsçš„é¡ºå­
 */
 int is_straight_at(deck_t * hand, size_t index, suit_t fs) {
-    print_hand(hand);
-    printf("check STRAIGHT which starts at %zu, flush is %d//// is_straight_at\n",index,fs);
-    qsort(hand->cards,hand->n_cards,sizeof(card_t*), card_ptr_comp);
-    print_hand(hand);
-    printf("\n");
+    //print_hand(hand);
+    //printf("check STRAIGHT which starts at %zu, flush is %d//// is_straight_at\n",index,fs);
     card_t** cards = hand -> cards;
-    if(cards[index][0].value == 14){//Òª¿¼ÂÇace-lowµÄÇé¿öµ«Ò²Òª¿¼ÂÇAKQJ0µÄÇé¿ö
-        printf("ace-low situation\n");
+    if(!check_suit(fs,cards[index][0].suit)) return 0;
+    if(cards[index][0].value == 14){//è¦è€ƒè™‘ace-lowçš„æƒ…å†µä½†ä¹Ÿè¦è€ƒè™‘AKQJ0çš„æƒ…å†µ
+        //printf("ace-low situation\n");
         if (is_ace_low_straight_at(hand, 0, fs) == -1) return -1;
     }
-    if (cards[index][0].value < 5) { //4.3.2¿ªÍ·µÄ»°Ã»ÓĞË³×Ó
-        printf("no straight\n");
+    if (cards[index][0].value < 5) { //4.3.2å¼€å¤´çš„è¯æ²¡æœ‰é¡ºå­
+        //printf("no straight\n");
         return 0;
     }
     else{
-        printf("recursion\n");
+        //printf("recursion\n");
         return is_n_length_straight_at(hand, index, fs, 4);
     }
 }
 
 /*
-    ´Ó[left,right]ËÑË÷countÕÅµ¥ÅÆ£¬ÍùÊÖÅÆÀïÌí¼Ó
-    ·µ»Ø³É¹¦Ìí¼ÓµÄ×ÜÕÅÊıi
+    ä»[left,right]æœç´¢countå¼ å•ç‰Œï¼Œå¾€æ‰‹ç‰Œé‡Œæ·»åŠ 
+    è¿”å›æˆåŠŸæ·»åŠ çš„æ€»å¼ æ•°i
 */
 int add_single_cards(deck_t * hand, card_t ** card, int left, int right, int count){
   if(left > right) return 0;
@@ -167,8 +168,8 @@ int add_single_cards(deck_t * hand, card_t ** card, int left, int right, int cou
 
 
 /*
-    ´Ó[left,right]ËÑË÷¶Ô×Ó£¬ÍùÊÖÅÆÀïÌí¼Ó£¨´æ´¢Î»ÖÃ´Óindex¿ªÊ¼£©
-    ·µ»Ø³É¹¦Ìí¼ÓµÄ×ÜÕÅÊı
+    ä»[left,right]æœç´¢å¯¹å­ï¼Œå¾€æ‰‹ç‰Œé‡Œæ·»åŠ ï¼ˆå­˜å‚¨ä½ç½®ä»indexå¼€å§‹ï¼‰
+    è¿”å›æˆåŠŸæ·»åŠ çš„æ€»å¼ æ•°
 */
 
 int  add_pair_cards(deck_t * hand, card_t ** card, int left, int right, int index){
@@ -185,8 +186,8 @@ int  add_pair_cards(deck_t * hand, card_t ** card, int left, int right, int inde
 }
 
 /*
-    ¹¹½¨ÊÖÅÆ
-    ÔÚÖ÷ÌåµÄÇ°ÃæºÍºóÃæÑ°ÕÒtiebreak
+    æ„å»ºæ‰‹ç‰Œ
+    åœ¨ä¸»ä½“çš„å‰é¢å’Œåé¢å¯»æ‰¾tiebreak
 */
 hand_eval_t build_hand_from_match(deck_t * hand,
 				  unsigned n,
@@ -195,35 +196,18 @@ hand_eval_t build_hand_from_match(deck_t * hand,
   hand_eval_t ans;
   ans.ranking = what;
   for(int i = 0; i < n ;i++ ){
-    ans.cards[i] = hand -> cards[idx + 0];
+    ans.cards[i] = hand -> cards[idx + i];
   }
-  if(what == TWO_PAIR || what == FULL_HOUSE){//ÕÒ¶Ô×Ó
-      int count = what == TWO_PAIR? 2:3;
-      //ÕÒ¶Ô×Ó
-      int add = add_pair_cards(hand, ans.cards, 0, idx - 1, count);
-      if(add == 0) add_pair_cards(hand, ans.cards, idx + n, hand -> n_cards - 1, count);
-      //ÕÒµ¥ÅÆ
-      if(n + 2 < 5){
-          int count = add_single_cards(hand, ans.cards, 0, idx - 1, 1 );
-          if(count == 0){
-              int i;
-              for(i = idx + 2; i < hand -> n_cards && hand->cards[i][0].value!= ans.cards[3]->value; i++ );
-              count = add_single_cards(hand, ans.cards, idx + 2, i - 1, 1 );
-              add_single_cards(hand, ans.cards, i + 2, hand -> n_cards - 1, 1 - count );
-          }
-      }
-  }
-  else{//ÕÒ³öµ¥ÕÅ×î´óµÄ5-nÕÅ deck_t * hand, card_t * card, int left, int right, int count
-      //ÕÒÇ°Ãæ
-      int count = add_single_cards(hand, ans.cards, 0, idx - 1, 5 - n );
-      //ÕÒºóÃæ
-      if(count + n < 5) add_single_cards(hand, ans.cards, idx + n, hand -> n_cards - 1, 5 - n - count);
-  }
+  //æ‰¾å‡ºå•å¼ æœ€å¤§çš„5-nå¼  deck_t * hand, card_t * card, int left, int right, int count
+  //æ‰¾å‰é¢
+  int count = add_single_cards(hand, ans.cards, 0, idx - 1, 5 - n );
+  //æ‰¾åé¢
+  if(count + n < 5) add_single_cards(hand, ans.cards, idx + n, hand -> n_cards - 1, 5 - n - count);
   return ans;
 }
 
 /*
-    ±È½ÏÊÖÅÆ
+    æ¯”è¾ƒæ‰‹ç‰Œ
 */
 int compare_hands(deck_t * hand1, deck_t * hand2) {
   hand_eval_t eval1 = evaluate_hand(hand1);
@@ -231,10 +215,10 @@ int compare_hands(deck_t * hand1, deck_t * hand2) {
   if(eval1.ranking!=eval2.ranking){
     return eval2.ranking - eval1.ranking;
   }
-  else{// ´ËÊ±±È½Ï×Ö·û¶ø²»ÊÇÀàĞÍ£¬¶øÇÒÀàĞÍÒÑ¾­È·¶¨ËùÒÔ²»»áÓĞ¶àµÄÊ²Ã´¶Ô×ÓÁË
+  else{// æ­¤æ—¶æ¯”è¾ƒå­—ç¬¦è€Œä¸æ˜¯ç±»å‹ï¼Œè€Œä¸”ç±»å‹å·²ç»ç¡®å®šæ‰€ä»¥ä¸ä¼šæœ‰å¤šçš„ä»€ä¹ˆå¯¹å­äº†
     for(int i = 0 ; i < 5 ; i++){
-        if(hand1->cards[i][0].value == hand2->cards[i][0].value) continue;
-        else return hand1->cards[i][0].value - hand2->cards[i][0].value;
+       if(eval1.cards[i][0].value == eval2.cards[i][0].value) continue;
+       else return eval1.cards[i][0].value - eval2.cards[i][0].value;
     }
   }
   return 0;
@@ -315,8 +299,6 @@ int find_straight(deck_t * hand, suit_t fs, hand_eval_t * ans) {
 //This function puts all the hand evaluation logic together.
 //This function is longer than we generally like to make functions,
 //and is thus not so great for readability :(
-
-
 hand_eval_t evaluate_hand(deck_t * hand) {
   suit_t fs = flush_suit(hand);
   hand_eval_t ans;
@@ -384,4 +366,6 @@ hand_eval_t evaluate_hand(deck_t * hand) {
   }
   return build_hand_from_match(hand, 0, NOTHING, 0);
 }
+
+
 
